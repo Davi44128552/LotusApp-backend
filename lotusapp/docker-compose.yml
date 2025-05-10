@@ -1,0 +1,18 @@
+services:
+  django-web:
+    build: .
+    container_name: django-docker
+    ports:
+      - "8000:8000"
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DEBUG: ${DEBUG}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS}
+    volumes:
+      - ./:/app
+      - sqlite_data:/app/data
+    env_file:
+      - .env
+
+volumes:
+  sqlite_data:
