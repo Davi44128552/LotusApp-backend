@@ -28,9 +28,10 @@ You can install it with one of these commands: `pip install django` or `sudo apt
 * Rodando sem docker
   ```bash
   pip install -r requirements.txt
+  python3 manage.py makemigrations
   python3 manage.py migrate
   python3 manage.py createsuperuser
-  python3 manage.py runserver
+  python3 manage.py runserver 0.0.0.0:8000
   ```
 (Atualmente dokcer esta com problema, rode sem!)
 * Faça o build do container e rode
