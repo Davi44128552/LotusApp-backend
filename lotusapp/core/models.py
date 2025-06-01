@@ -51,7 +51,13 @@ class CasoClinico(models.Model):
     descricao = models.CharField(max_length = 1000)
     area = models.CharField(max_length = 100)
     arquivos = JSONField(default = list)
-
+    professor_responsavel = models.ForeignKey(
+        Professor,
+        on_delete = models.CASCADE, # TODO: pensar se é deletado em cascata ou SET_NULL
+        null = True,
+        blank = True,
+        related_name='casos_clinicos_criados_pelo_professor'
+    )
     class Dificuldade(models.TextChoices):
         INICIANTE = 'F', 'Iniciante'
         INTERMEDIARIO = 'M', 'Intermediário'
@@ -87,13 +93,31 @@ class Turma(models.Model):
         null = True,
         blank = True
         )
+    alunos_matriculados = models.ManyToManyField(
+        Aluno,
+        blank = True,
+        related_name='turmas_matriculadas'
+    )
 
 # Classe da equipe
 class Equipe(models.Model):
     nome = models.CharField(max_length = 100)
     turma = models.ForeignKey(
         Turma,
-        on_delete = models.CASCADE
+        on_delete = models.CASCADE,
+        related_name='equipes'
+    )
+    alunos = models.ManyToManyField(
+        Aluno,
+        blank = True,
+        related_name='equipes'
+    )
+    caso_designado = models.ForeignKey(
+        CasoClinico,
+        on_delete = models.SET_NULL,
+        null = True,
+        blank = True,
+        related_name='equipes_designadas'
     )
 
 # Classe de Diagnóstico das equipes de alunos
