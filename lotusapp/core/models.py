@@ -1,40 +1,97 @@
 from django.db import models
 from django.db.models import JSONField
+from django.contrib.auth.models import AbstractUser, BaseUserManager # Classe de usuário abstrata do Django
 
+class UsuarioManager(BaseUserManager):
+    def create_user(self,username , email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('O email deve ser fornecido')
+        if not username:
+            raise ValueError('O nome de usuário deve ser fornecido')
+        email = self.normalize_email(email)
+        user = self.model(
+            email=email,
+            username=username,
+            **extra_fields
+        )
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, username, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('tipo', Usuario.Tipo.ADMINISTRADOR)
+
+        if 'first_name' not in extra_fields:
+            raise ValueError('O primeiro nome deve ser fornecido para o superusuário')
+        
+        return self.create_user(
+            username=username,
+            email=email,
+            password=password,
+            **extra_fields
+        )
+    
 # Criando as classes das entidades
 # Classe usuário
-class Usuario(models.Model):
-    nome = models.CharField(max_length = 100)
-    cpf = models.CharField(
-        max_length = 11, 
-        unique = True
-        )
-    email = models.CharField(max_length = 200)
-    senha = models.CharField(max_length = 100)
-    foto_url = models.CharField(max_length = 100)
-    data_cadastro = models.DateField()
-
+class Usuario(AbstractUser):
     class Tipo(models.TextChoices):
         PROFESSOR = 'prof', 'Professor'
         ALUNO = 'alu', 'Aluno'
         ADMINISTRADOR = 'admin', 'Administrador'
 
+    # Campos django: username, first_name, last_name, email, password, data_joined, is_active, is_staff, is_superuser
+    cpf = models.CharField(
+        max_length = 11, 
+        unique = True,
+        null = True,
+        blank = True
+    )
+    # Não é unique por padrão
+    email = models.EmailField(
+        unique = True
+    )
+    foto_url = models.CharField(max_length = 100)
     tipo = models.CharField(
         max_length = 5,
         choices = Tipo.choices,
+        default= Tipo.ALUNO
     )
+    USERNAME_FIELD = 'email'
+    # Requeridos ao criar um superusuário
+    REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
+    objects = UsuarioManager()
+
+
+
 
 # Classe professor
-class Professor(Usuario):
+class Professor(models.Model):
+    # Cria uma relação de perfil entre o usuário e o professor
+    usuario = models.OneToOneField(
+        Usuario, 
+        on_delete=models.CASCADE, 
+        primary_key=True, 
+        related_name='professor'
+    )
     formacao = models.CharField(max_length = 100)
     especialidade = models.CharField(max_length = 100)
 
     def save(self, *args, **kwargs):
-        self.tipo = Usuario.Tipo.PROFESSOR
+        self.usuario.tipo = Usuario.Tipo.PROFESSOR
+        # Salvando as alterações no usuário associado
+        self.usuario.save()
         super().save(*args, **kwargs)
 
 # Classe aluno
-class Aluno(Usuario):
+class Aluno(models.Model):
+    usuario = models.OneToOneField(
+        Usuario, 
+        on_delete=models.CASCADE, 
+        primary_key=True, 
+        related_name='aluno'
+    )
     semestre = models.CharField(max_length = 6)
     ira = models.DecimalField(
         max_digits = 4, 
@@ -42,7 +99,8 @@ class Aluno(Usuario):
         )
 
     def save(self, *args, **kwargs):
-        self.tipo = Usuario.Tipo.ALUNO
+        self.usuario.tipo = Usuario.Tipo.ALUNO
+        self.usuario.save()
         super().save(*args, **kwargs)
 
 # Classe de caso clínico

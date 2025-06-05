@@ -2,7 +2,8 @@ from django.http import JsonResponse
 import json
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.hashers import make_password, check_password
+from django.contrib.auth.hashers import  check_password
+from django.contrib.auth import authenticate
 from django.utils import timezone
 from .models import Usuario, Aluno, Professor
 
@@ -12,60 +13,87 @@ def cadastro(request):
     try:
         data = json.loads(request.body)
 
-        nome = data.get('nome')
+        # dados recebidos do post
+        first_name = data.get('nome') 
+        last_name = data.get('sobrenome', '') 
         cpf = data.get('cpf')
         email = data.get('email')
-        senha = data.get('senha')
-        foto_url = data.get('foto_url', '') 
-        tipo_usuario = data.get('tipo')
+        password = data.get('senha') 
+        username = data.get('username') 
+        foto_url = data.get('foto_url', '')
+        tipo_usuario_str = data.get('tipo') 
 
-        #TODO: fazer Validações
+        if not all([first_name, cpf, email, password, username, tipo_usuario_str]):
+            return JsonResponse({'erro': 'Campos obrigatórios ausentes (nome, cpf, email, senha, username, tipo).'}, status=400)
 
-        # Hashear a senha antes de salvar
-        senha_hash = make_password(senha)
-        data_atual = timezone.now().date()
+        # Verificar se o usuário (email ou username ou cpf) já existe
+        if Usuario.objects.filter(email=email).exists():
+            return JsonResponse({'erro': 'Este email já está cadastrado.'}, status=400)
+        if Usuario.objects.filter(username=username).exists():
+            return JsonResponse({'erro': 'Este nome de usuário já está em uso.'}, status=400)
+        if Usuario.objects.filter(cpf=cpf).exists():
+            return JsonResponse({'erro': 'Este CPF já está cadastrado.'}, status=400)
 
-        user_data_dict = {
-            'nome': nome,
+        user_creation_data = {
+            'first_name': first_name,
+            'last_name': last_name,
             'cpf': cpf,
-            'email': email,
-            'senha': senha_hash,
             'foto_url': foto_url,
-            'data_cadastro': data_atual,
         }
 
-        novo_usuario = None
-        if tipo_usuario == Usuario.Tipo.ALUNO:
-            user_data_dict['semestre'] = data.get('semestre', 'N/A') 
-            user_data_dict['ira'] = data.get('ira', 0.0)    
-            novo_usuario = Aluno.objects.create(**user_data_dict)
-        
-        elif tipo_usuario == Usuario.Tipo.PROFESSOR:
-            user_data_dict['formacao'] = data.get('formacao', 'N/A') 
-            user_data_dict['especialidade'] = data.get('especialidade', 'N/A') 
-            novo_usuario = Professor.objects.create(**user_data_dict)
-        elif tipo_usuario == Usuario.Tipo.ADMINISTRADOR:
-            user_data_dict['tipo'] = Usuario.Tipo.ADMINISTRADOR # Define explicitamente para admin
-            novo_usuario = Usuario.objects.create(**user_data_dict)
+        try:
+            novo_usuario_obj = Usuario.objects.create_user(
+                username=username,
+                email=email,
+                password=password,
+                **user_creation_data
+            )
+        except ValueError as ve: 
+            return JsonResponse({'erro': str(ve)}, status=400)
+
+        # Perfil de aluno
+        if tipo_usuario_str == Usuario.Tipo.ALUNO.value: 
+            novo_usuario_obj.tipo = Usuario.Tipo.ALUNO
+            novo_usuario_obj.save()
+            Aluno.objects.create(
+                usuario=novo_usuario_obj,
+                semestre=data.get('semestre', 'N/A'),
+                ira=data.get('ira', 0.0)
+            )
+        # Perfil de professor
+        elif tipo_usuario_str == Usuario.Tipo.PROFESSOR.value: 
+            novo_usuario_obj.tipo = Usuario.Tipo.PROFESSOR
+            novo_usuario_obj.save()
+            Professor.objects.create(
+                usuario=novo_usuario_obj,
+                formacao=data.get('formacao', 'N/A'),
+                especialidade=data.get('especialidade', 'N/A')
+            )
+        elif tipo_usuario_str == Usuario.Tipo.ADMINISTRADOR.value:
+            novo_usuario_obj.tipo = Usuario.Tipo.ADMINISTRADOR
+            novo_usuario_obj.is_staff = True
+            novo_usuario_obj.is_superuser = data.get('is_superuser', False) # Para criar admins sem permissões de superusuário
+            novo_usuario_obj.save()
         else:
-            # Caso não seja encontra um tipo de usuário válido
-            return JsonResponse({'erro': 'Tipo de usuário inválido.'}, status=400)
+            # Caso não cosniga achar o tipo eu deleto o usuario criado
+            novo_usuario_obj.delete() 
+            return JsonResponse({'erro': 'Tipo de usuário inválido fornecido.'}, status=400)
 
         return JsonResponse({
-            # TODO:Mensagem de confirmação, sera que seguro passar id? Porém ajudaria no desenvolvimento
             'mensagem': 'Usuário cadastrado com sucesso!',
             'usuario': {
-                'id': novo_usuario.id,
-                'nome': novo_usuario.nome,
-                'email': novo_usuario.email,
-                'tipo': novo_usuario.tipo
+                'id': novo_usuario_obj.id,
+                'first_name': novo_usuario_obj.first_name,
+                'email': novo_usuario_obj.email,
+                'username': novo_usuario_obj.username,
             }
         }, status=201)
 
     except json.JSONDecodeError:
         return JsonResponse({'erro': 'Dados JSON inválidos.'}, status=400)
     except Exception as e:
-        return JsonResponse({'erro': f'ocoorreu: {str(e)}'}, status=500)
+        return JsonResponse({'erro': f'Ocorreu um erro inesperado: {str(e)}'}, status=500)
+
 
 
 @csrf_exempt
@@ -78,20 +106,16 @@ def login(request):
 
         if not email or not senha_fornecida:
             return JsonResponse({'erro': 'Email e senha são obrigatórios.'}, status=400)
-        try:
-            # BUscando o usuário pelo email fornecido
-            usuario = Usuario.objects.get(email=email)
-        except Usuario.DoesNotExist:
-            return JsonResponse({'erro': 'Usuário não encontrado.'}, status=404)
+        
+        usuario = authenticate(request, username=email, password=senha_fornecida)
 
-        if check_password(senha_fornecida, usuario.senha):
-            # TODO: Implementar autenticação JWT futuramente
-
+        if usuario is not None:
+        
             user_data_response = {
                 'id': usuario.id,
-                'nome': usuario.nome,
+                'first_name': usuario.first_name,
+                'last_name': usuario.last_name,
                 'email': usuario.email,
-                'tipo': usuario.tipo,
             }
 
 
@@ -107,4 +131,4 @@ def login(request):
     except json.JSONDecodeError:
         return JsonResponse({'erro': 'Dados JSON inválidos.'}, status=400)
     except Exception as e:
-        return JsonResponse({'erro': f'Ocorreu um erro: {str(e)}'}, status=500)
+        return JsonResponse({'erro': f'Ocorreu um erro inesperado: {str(e)}'}, status=500)
