@@ -25,6 +25,15 @@ You can install it with one of these commands: `pip install django` or `sudo apt
   ```
 * Crie um arquivo chamado `.env` e adicione o conteúdo de `.env.example` dentro
 * Gere um nova secret key e adicione ao arquivo entre áspas, ela pode ser gerada [aqui](https://djecrety.ir/)
+* Rodando sem docker
+  ```bash
+  pip install -r requirements.txt
+  python3 manage.py makemigrations
+  python3 manage.py migrate
+  python3 manage.py createsuperuser
+  python3 manage.py runserver 0.0.0.0:8000
+  ```
+(Atualmente dokcer esta com problema, rode sem!)
 * Faça o build do container e rode
   ```bash
   docker compose up --build

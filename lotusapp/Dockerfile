@@ -35,10 +35,14 @@ COPY --chown=appuser:appuser . .
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1 
 
+COPY --chown=appuser:appuser entrypoint.sh /app/entrypoint.sh
+
 # Alterando o usuário para não rodar como root (Segurannça)
 USER appuser
 
 EXPOSE 8000 
+
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Comando para rodar a aplicação
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
