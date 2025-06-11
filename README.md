@@ -28,18 +28,12 @@ You can install it with one of these commands: `pip install django` or `sudo apt
 * Rodando sem docker
   ```bash
   pip install -r requirements.txt
+  python3 manage.py makemigrations core # Pode ser necessario utilizar este comando primeiro para não dar erro na criação do superusuário
   python3 manage.py makemigrations
   python3 manage.py migrate
   python3 manage.py createsuperuser
   python3 manage.py runserver 0.0.0.0:8000
   ```
-(Atualmente dokcer esta com problema, rode sem!)
-* Faça o build do container e rode
-  ```bash
-  docker compose up --build
-  ```
-* Futuramente é possível apenas iniciar o container ja construido com
-  ```bash
-  docker compose up
-  ```
-* Ao fechar o temrinal também não é ncessesário criar um novo ambiente virtual, apenas executar o existente já é suficiente
+
+  *Obs.: Se der erro relacionado à inexistência das bibliotecas recém-instaladas, escreva apenas "python" no lugar de "python3"*
+

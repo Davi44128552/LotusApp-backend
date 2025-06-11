@@ -1,11 +1,11 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 import json
 from django.views.decorators.http import require_http_methods
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import  check_password
 from django.contrib.auth import authenticate
 from django.utils import timezone
-from .models import Usuario, Aluno, Professor
+from .models import Usuario, Aluno, Professor, Turma
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -130,5 +130,53 @@ def login(request):
 
     except json.JSONDecodeError:
         return JsonResponse({'erro': 'Dados JSON inválidos.'}, status=400)
+    except Exception as e:
+        return JsonResponse({'erro': f'Ocorreu um erro inesperado: {str(e)}'}, status=500)
+    
+# Funções para professores
+
+# Criando uma função para retornar as informações do professor em uma rota
+
+@require_http_methods(["GET"])
+def info_perfil_prof(request, id):
+    try:
+        professor = Professor.objects.get(usuario_id=id)
+        dados = {
+            'nome': professor.usuario.first_name,
+            'sobrenome': professor.usuario.last_name,
+            'email': professor.usuario.email,
+            'formacao': professor.formacao,
+            'especialidade': professor.especialidade,
+        }
+
+        return JsonResponse(dados)
+
+    except Professor.DoesNotExist:
+        raise Http404("Professor não encontrado.")
+
+    except Exception as e:
+        return JsonResponse({'erro': f'Ocorreu um erro inesperado: {str(e)}'}, status=500)
+    
+# Função para listar as turmas do professor
+def listar_turmas_prof(request, id):
+    try:
+        professor = Professor.objects.get(usuario_id = id)
+        turmas = Turma.objects.get(professor_responsavel = professor)
+
+        turmas_professor = [
+            {
+                'id' : turma.id,
+                'disciplina' : turma.disciplina,
+                'semestre' : turma.semestre
+            }
+
+            for turma in turmas
+        ]
+
+        return JsonResponse(turmas_professor, safe = False)
+
+    except Professor.DoesNotExist:
+        raise Http404("Professor não encontrado.")
+    
     except Exception as e:
         return JsonResponse({'erro': f'Ocorreu um erro inesperado: {str(e)}'}, status=500)

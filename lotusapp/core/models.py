@@ -198,6 +198,7 @@ class Notas(models.Model):
     )
 
     equipe = models.ForeignKey(
-        Equipe
+        Equipe,
+        on_delete = models.CASCADE
     )
 
