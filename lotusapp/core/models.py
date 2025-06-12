@@ -1,6 +1,10 @@
+from django.contrib.auth.models import (  # Classe de usuário abstrata do Django
+    AbstractUser,
+    BaseUserManager,
+)
 from django.db import models
 from django.db.models import JSONField
-from django.contrib.auth.models import AbstractUser, BaseUserManager # Classe de usuário abstrata do Django
+
 
 class UsuarioManager(BaseUserManager):
     def create_user(self,username , email, password=None, **extra_fields):

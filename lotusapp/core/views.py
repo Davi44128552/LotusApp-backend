@@ -1,11 +1,12 @@
-from django.http import JsonResponse, Http404
 import json
-from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.hashers import  check_password
+
 from django.contrib.auth import authenticate
-from django.utils import timezone
-from .models import Usuario, Aluno, Professor, Turma, CasoClinico, Diagnostico
+from django.http import Http404, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+
+from .models import Aluno, CasoClinico, Diagnostico, Professor, Turma, Usuario
+
 
 @csrf_exempt
 @require_http_methods(["POST"])
