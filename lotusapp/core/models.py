@@ -1,19 +1,19 @@
+from django.contrib.auth.models import (  # Classe de usuário abstrata do Django
+    AbstractUser,
+    BaseUserManager,
+)
 from django.db import models
 from django.db.models import JSONField
-from django.contrib.auth.models import AbstractUser, BaseUserManager # Classe de usuário abstrata do Django
+
 
 class UsuarioManager(BaseUserManager):
-    def create_user(self,username , email, password=None, **extra_fields):
+    def create_user(self, username, email, password=None, **extra_fields):
         if not email:
             raise ValueError('O email deve ser fornecido')
         if not username:
             raise ValueError('O nome de usuário deve ser fornecido')
         email = self.normalize_email(email)
-        user = self.model(
-            email=email,
-            username=username,
-            **extra_fields
-        )
+        user = self.model(email=email, username=username, **extra_fields)
         user.set_password(password)
         user.save(using=self._db)
         return user
@@ -25,14 +25,10 @@ class UsuarioManager(BaseUserManager):
 
         if 'first_name' not in extra_fields:
             raise ValueError('O primeiro nome deve ser fornecido para o superusuário')
-        
-        return self.create_user(
-            username=username,
-            email=email,
-            password=password,
-            **extra_fields
-        )
-    
+
+        return self.create_user(username=username, email=email, password=password, **extra_fields)
+
+
 # Criando as classes das entidades
 # Classe usuário
 class Usuario(AbstractUser):
@@ -42,41 +38,25 @@ class Usuario(AbstractUser):
         ADMINISTRADOR = 'admin', 'Administrador'
 
     # Campos django: username, first_name, last_name, email, password, data_joined, is_active, is_staff, is_superuser
-    cpf = models.CharField(
-        max_length = 11, 
-        unique = True,
-        null = True,
-        blank = True
-    )
+    cpf = models.CharField(max_length=11, unique=True, null=True, blank=True)
     # Não é unique por padrão
-    email = models.EmailField(
-        unique = True
-    )
-    foto_url = models.CharField(max_length = 100)
-    tipo = models.CharField(
-        max_length = 5,
-        choices = Tipo.choices,
-        default= Tipo.ALUNO
-    )
+    email = models.EmailField(unique=True)
+    foto_url = models.CharField(max_length=100)
+    tipo = models.CharField(max_length=5, choices=Tipo.choices, default=Tipo.ALUNO)
     USERNAME_FIELD = 'email'
     # Requeridos ao criar um superusuário
     REQUIRED_FIELDS = ['username', 'first_name', 'last_name']
     objects = UsuarioManager()
 
 
-
-
 # Classe professor
 class Professor(models.Model):
     # Cria uma relação de perfil entre o usuário e o professor
     usuario = models.OneToOneField(
-        Usuario, 
-        on_delete=models.CASCADE, 
-        primary_key=True, 
-        related_name='professor'
+        Usuario, on_delete=models.CASCADE, primary_key=True, related_name='professor'
     )
-    formacao = models.CharField(max_length = 100)
-    especialidade = models.CharField(max_length = 100)
+    formacao = models.CharField(max_length=100)
+    especialidade = models.CharField(max_length=100)
 
     def save(self, *args, **kwargs):
         self.usuario.tipo = Usuario.Tipo.PROFESSOR
@@ -84,121 +64,89 @@ class Professor(models.Model):
         self.usuario.save()
         super().save(*args, **kwargs)
 
+
 # Classe aluno
 class Aluno(models.Model):
     usuario = models.OneToOneField(
-        Usuario, 
-        on_delete=models.CASCADE, 
-        primary_key=True, 
-        related_name='aluno'
+        Usuario, on_delete=models.CASCADE, primary_key=True, related_name='aluno'
     )
-    semestre = models.CharField(max_length = 6)
-    matricula = models.CharField(
-        max_length = 10,
-        unique = True
-    )
+    semestre = models.CharField(max_length=6)
+    matricula = models.CharField(max_length=10, unique=True)
 
     def save(self, *args, **kwargs):
         self.usuario.tipo = Usuario.Tipo.ALUNO
         self.usuario.save()
         super().save(*args, **kwargs)
 
+
 # Classe de caso clínico
 class CasoClinico(models.Model):
-    titulo = models.CharField(max_length = 100)
-    descricao = models.CharField(max_length = 1000)
-    area = models.CharField(max_length = 100)
-    arquivos = JSONField(default = list)
+    titulo = models.CharField(max_length=100)
+    descricao = models.CharField(max_length=1000)
+    area = models.CharField(max_length=100)
+    arquivos = JSONField(default=list)
     professor_responsavel = models.ForeignKey(
         Professor,
-        on_delete = models.CASCADE, # TODO: pensar se é deletado em cascata ou SET_NULL
-        null = True,
-        blank = True,
-        related_name='casos_clinicos_criados_pelo_professor'
+        on_delete=models.CASCADE,  # TODO: pensar se é deletado em cascata ou SET_NULL
+        null=True,
+        blank=True,
+        related_name='casos_clinicos_criados_pelo_professor',
     )
+
     class Dificuldade(models.TextChoices):
         INICIANTE = 'F', 'Iniciante'
         INTERMEDIARIO = 'M', 'Intermediário'
         AVANÇADO = 'D', 'Avançado'
 
     dificuldade = models.CharField(
-        max_length = 1,
-        choices = Dificuldade.choices,
-        default = Dificuldade.INTERMEDIARIO
+        max_length=1, choices=Dificuldade.choices, default=Dificuldade.INTERMEDIARIO
     )
+
 
 # Classe de Diagnóstico
 class Diagnostico(models.Model):
-    descricao = models.CharField(max_length = 1000)
-    caso_clinico = models.ForeignKey(
-        CasoClinico,
-        on_delete = models.CASCADE
-    )
-    resposta_professor = models.ForeignKey(
-        Professor,
-        on_delete = models.CASCADE
-    )
+    descricao = models.CharField(max_length=1000)
+    caso_clinico = models.ForeignKey(CasoClinico, on_delete=models.CASCADE)
+    resposta_professor = models.ForeignKey(Professor, on_delete=models.CASCADE)
+
 
 # Classe da turma
 class Turma(models.Model):
-    disciplina = models.CharField(max_length = 100)
-    semestre = models.CharField(max_length = 6)
+    disciplina = models.CharField(max_length=100)
+    semestre = models.CharField(max_length=6)
     capacidade_maxima = models.SmallIntegerField()
     quantidade_alunos = models.SmallIntegerField()
     professor_responsavel = models.ForeignKey(
-        Professor,
-        on_delete = models.SET_NULL,
-        null = True,
-        blank = True
-        )
-    alunos_matriculados = models.ManyToManyField(
-        Aluno,
-        blank = True,
-        related_name='turmas_matriculadas'
+        Professor, on_delete=models.SET_NULL, null=True, blank=True
     )
+    alunos_matriculados = models.ManyToManyField(
+        Aluno, blank=True, related_name='turmas_matriculadas'
+    )
+
 
 # Classe da equipe
 class Equipe(models.Model):
-    nome = models.CharField(max_length = 100)
-    turma = models.ForeignKey(
-        Turma,
-        on_delete = models.CASCADE,
-        related_name='equipes'
-    )
-    alunos = models.ManyToManyField(
-        Aluno,
-        blank = True,
-        related_name='equipes'
-    )
+    nome = models.CharField(max_length=100)
+    turma = models.ForeignKey(Turma, on_delete=models.CASCADE, related_name='equipes')
+    alunos = models.ManyToManyField(Aluno, blank=True, related_name='equipes')
     caso_designado = models.ForeignKey(
         CasoClinico,
-        on_delete = models.SET_NULL,
-        null = True,
-        blank = True,
-        related_name='equipes_designadas'
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='equipes_designadas',
     )
+
 
 # Classe de Diagnóstico das equipes de alunos
 class TentativaDiagnostico(models.Model):
-    descricao = models.CharField(max_length = 1000)
-    caso_clinico = models.ForeignKey(
-        CasoClinico,
-        on_delete = models.CASCADE
-    )
-    equipe = models.ForeignKey(
-        Equipe,
-        on_delete = models.CASCADE
-    )
+    descricao = models.CharField(max_length=1000)
+    caso_clinico = models.ForeignKey(CasoClinico, on_delete=models.CASCADE)
+    equipe = models.ForeignKey(Equipe, on_delete=models.CASCADE)
+
 
 # Classe de notas
 class Notas(models.Model):
-    valor = models.DecimalField(
-        max_digits = 3,
-        decimal_places = 1
-    )
+    valor = models.DecimalField(max_digits=3, decimal_places=1)
 
-    equipe = models.ForeignKey(
-        Equipe,
-        on_delete = models.CASCADE
-    )
-
+    equipe = models.ForeignKey(Equipe, on_delete=models.CASCADE)

@@ -1,13 +1,14 @@
 from django.contrib import admin
+
 from .models import (
-    Usuario,
-    Professor,
     Aluno,
     CasoClinico,
     Diagnostico,
-    Turma,
     Equipe,
-    TentativaDiagnostico
+    Professor,
+    TentativaDiagnostico,
+    Turma,
+    Usuario,
 )
 
 admin.site.register(Usuario)
