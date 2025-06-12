@@ -93,10 +93,10 @@ class Aluno(models.Model):
         related_name='aluno'
     )
     semestre = models.CharField(max_length = 6)
-    ira = models.DecimalField(
-        max_digits = 4, 
-        decimal_places = 3
-        )
+    matricula = models.CharField(
+        max_length = 10,
+        unique = True
+    )
 
     def save(self, *args, **kwargs):
         self.usuario.tipo = Usuario.Tipo.ALUNO
@@ -189,3 +189,16 @@ class TentativaDiagnostico(models.Model):
         Equipe,
         on_delete = models.CASCADE
     )
+
+# Classe de notas
+class Notas(models.Model):
+    valor = models.DecimalField(
+        max_digits = 3,
+        decimal_places = 1
+    )
+
+    equipe = models.ForeignKey(
+        Equipe,
+        on_delete = models.CASCADE
+    )
+
