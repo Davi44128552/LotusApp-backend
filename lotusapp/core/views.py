@@ -5,7 +5,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import  check_password
 from django.contrib.auth import authenticate
 from django.utils import timezone
-from .models import Usuario, Aluno, Professor, Turma
+from .models import Usuario, Aluno, Professor, Turma, CasoClinico, Diagnostico
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -142,8 +142,7 @@ def info_perfil_prof(request, id):
     try:
         professor = Professor.objects.get(usuario_id=id)
         dados = {
-            'nome': professor.usuario.first_name,
-            'sobrenome': professor.usuario.last_name,
+            'nome': f'{professor.usuario.first_name} {professor.usuario.last_name}',
             'email': professor.usuario.email,
             'formacao': professor.formacao,
             'especialidade': professor.especialidade,
@@ -158,25 +157,111 @@ def info_perfil_prof(request, id):
         return JsonResponse({'erro': f'Ocorreu um erro inesperado: {str(e)}'}, status=500)
     
 # Função para listar as turmas do professor
+@require_http_methods(["GET"])
 def listar_turmas_prof(request, id):
     try:
         professor = Professor.objects.get(usuario_id = id)
-        turmas = Turma.objects.get(professor_responsavel = professor)
+        turmas = Turma.objects.filter(professor_responsavel = professor)
 
-        turmas_professor = [
-            {
+        turmas_professor = []
+        for turma in turmas:
+            turmas_professor.append(
+                {
                 'id' : turma.id,
                 'disciplina' : turma.disciplina,
                 'semestre' : turma.semestre
-            }
-
-            for turma in turmas
-        ]
+                }
+            )
 
         return JsonResponse(turmas_professor, safe = False)
 
     except Professor.DoesNotExist:
         raise Http404("Professor não encontrado.")
+    
+    except Exception as e:
+        return JsonResponse({'erro': f'Ocorreu um erro inesperado: {str(e)}'}, status=500)
+
+# Função para mostrar os casos do professor
+@require_http_methods(["GET"])  
+def listar_casos_prof(request, id):
+    try:
+        professor = Professor.objects.get(usuario_id = id)
+        casos = CasoClinico.objects.filter(professor_responsavel = professor)
+
+        casos_professor = []
+        for caso in casos:
+            casos_professor.append(
+                {
+                    'id': caso.id,
+                    'título': caso.titulo
+                }
+            )
+
+        return JsonResponse(casos_professor, safe = False)
+    
+    except Professor.DoesNotExist:
+        raise Http404("Professor não encontrado.")
+    
+    except Exception as e:
+        return JsonResponse({'erro': f'Ocorreu um erro inesperado: {str(e)}'}, status=500)
+
+# Funções para casos
+    # Função para expor detalhes dos casos
+@require_http_methods(["GET"])
+def info_casos(request, prof_id, caso_id):
+    try:
+        caso = CasoClinico.objects.get(id = caso_id)
+        diagnostico = Diagnostico.objects.get(caso_clinico = caso)
+        dados = {
+            'id': caso.id,
+            'título': caso.titulo,
+            'descrição': caso.descricao,
+            'area': caso.area,
+            'arquivos': caso.arquivos,
+            'dificuldade': caso.dificuldade,
+            'diagnóstico': diagnostico.descricao
+        }
+
+        return JsonResponse(dados)
+    
+    except Professor.DoesNotExist:
+        raise Http404("Professor não encontrado.")
+    
+    except CasoClinico.DoesNotExist:
+        raise Http404("Caso clínico não encontrado.")
+    
+    except Exception as e:
+        return JsonResponse({'erro': f'Ocorreu um erro inesperado: {str(e)}'}, status=500)
+    
+# Funções para turmas
+@require_http_methods(["GET"])
+def info_turmas(request, id):
+    try:
+        turma = Turma.objects.get(id = id)
+        alunos = turma.alunos_matriculados.all()
+        lista_alunos = []
+        for aluno in alunos:
+            lista_alunos.append(
+                {
+                    'nome': f'{aluno.usuario.first_name} {aluno.usuario.last_name}',
+                    'matricula': aluno.matricula
+                }
+            )
+
+        dados = {
+            'id': turma.id,
+            'disciplina': turma.disciplina,
+            'semestre': turma.semestre,
+            'capacidade máxima': turma.capacidade_maxima,
+            'quantidade de alunos': turma.quantidade_alunos,
+            'professor': turma.professor_responsavel.usuario.first_name,
+            'alunos': lista_alunos
+        }
+
+        return JsonResponse(dados)
+
+    except Turma.DoesNotExist:
+        raise Http404("Turma não encontrada.")
     
     except Exception as e:
         return JsonResponse({'erro': f'Ocorreu um erro inesperado: {str(e)}'}, status=500)
