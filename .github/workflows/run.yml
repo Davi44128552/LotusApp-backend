@@ -1,4 +1,3 @@
-
 name: Django CI
 
 on:
@@ -10,17 +9,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:13
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: github_actions
-        ports:
-          - 5432:5432
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
     - uses: actions/checkout@v4
@@ -37,12 +25,15 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run migrations
-      env:
-        DATABASE_URL: postgres://postgres:postgres@localhost:5432/github_actions
-      run: python manage.py migrate
+      run: |
+        cd lotusapp
+        python manage.py makemigrations core
+        python manage.py makemigrations
+        python manage.py migrate
 
     - name: Run tests
       env:
-        DATABASE_URL: postgres://postgres:postgres@localhost:5432/github_actions
         DJANGO_SECRET_KEY: ${{ secrets.DJANGO_SECRET_KEY }}
-      run: python manage.py test
+      run: |
+        cd lotusapp
+        python manage.py test
