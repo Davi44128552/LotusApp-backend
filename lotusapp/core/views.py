@@ -5,7 +5,7 @@ from django.http import Http404, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from .models import Aluno, CasoClinico, Diagnostico, Professor, Turma, Usuario
+from .models import Aluno, CasoClinico, Diagnostico, Equipe, Professor, Turma, Usuario
 
 
 @csrf_exempt
@@ -212,8 +212,8 @@ def listar_casos_prof(request, id):
 @require_http_methods(['GET'])
 def info_casos(request, prof_id, caso_id):
     try:
-        caso = CasoClinico.objects.get(id=caso_id)
-        diagnostico = Diagnostico.objects.get(caso_clinico=caso)
+        caso = CasoClinico.objects.get(id=caso_id, professor_responsavel__usuario_id=prof_id)
+        diagnostico = Diagnostico.objects.filter(caso_clinico=caso).first()
         dados = {
             'id': caso.id,
             'título': caso.titulo,
@@ -226,14 +226,46 @@ def info_casos(request, prof_id, caso_id):
 
         return JsonResponse(dados)
 
-    except Professor.DoesNotExist:
-        raise Http404('Professor não encontrado.')
-
     except CasoClinico.DoesNotExist:
         raise Http404('Caso clínico não encontrado.')
 
+    except Diagnostico.DoesNotExist:
+        raise Http404('Diagnóstico inexistente!')
+
     except Exception as e:
         return JsonResponse({'erro': f'Ocorreu um erro inesperado: {str(e)}'}, status=500)
+
+
+@require_http_methods(['GET'])
+def listar_equipes(request, prof_id, turma_id):
+    try:
+        professor = Professor.objects.get(usuario_id=prof_id)
+        turma = Turma.objects.get(id=turma_id, professor_responsavel=professor)
+        equipes = Equipe.objects.filter(turma=turma)
+
+        dados_equipes = []
+        for equipe in equipes:
+            alunos = equipe.alunos.all()
+            lista_alunos = []
+            for aluno in alunos:
+                lista_alunos.append(f'{aluno.usuario.first_name} {aluno.usuario.last_name}')
+
+            dados_equipes.append(
+                {
+                    'id': equipe.id,
+                    'nome': equipe.nome,
+                    'turma': equipe.turma.disciplina,
+                    'integrantes': lista_alunos,
+                }
+            )
+
+        return JsonResponse(dados_equipes, safe=False)
+
+    except Professor.DoesNotExist:
+        raise Http404('Professor inexistente!')
+
+    except Turma.DoesNotExist:
+        raise Http404('Turma inexistente!')
 
 
 # Funções para turmas
