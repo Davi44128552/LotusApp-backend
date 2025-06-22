@@ -268,6 +268,39 @@ def listar_equipes(request, prof_id, turma_id):
         raise Http404('Turma inexistente!')
 
 
+@require_http_methods(['GET'])
+def listar_notas(request, prof_id, turma_id):
+    try:
+        professor = Professor.objects.get(usuario_id=prof_id)
+        turma = Turma.objects.get(id=turma_id, professor_responsavel=professor)
+        alunos = turma.alunos_matriculados.all()
+
+        notas_alunos = []
+        for aluno in alunos:
+            notas = aluno.notas.all()
+            lista_notas = []
+            for nota in notas:
+                lista_notas.append(nota.valor)
+
+            notas_alunos.append(
+                {
+                    'aluno': f'{aluno.usuario.first_name} {aluno.usuario.last_name}',
+                    'notas': lista_notas,
+                }
+            )
+
+        return JsonResponse(notas_alunos, safe=False)
+
+    except Professor.DoesNotExist:
+        raise Http404('Professor inexistente!')
+
+    except Turma.DoesNotExist:
+        raise Http404('Turma não encontrada.')
+
+    except Exception as e:
+        return JsonResponse({'erro': f'Ocorreu um erro inesperado: {str(e)}'}, status=500)
+
+
 # Funções para turmas
 @require_http_methods(['GET'])
 def info_turmas(request, id):

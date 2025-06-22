@@ -5,6 +5,7 @@ from .models import (
     CasoClinico,
     Diagnostico,
     Equipe,
+    Nota,
     Professor,
     TentativaDiagnostico,
     Turma,
@@ -18,4 +19,5 @@ admin.site.register(CasoClinico)
 admin.site.register(Diagnostico)
 admin.site.register(Turma)
 admin.site.register(Equipe)
+admin.site.register(Nota)
 admin.site.register(TentativaDiagnostico)

@@ -12,6 +12,11 @@ urlpatterns = [
         views.listar_equipes,
         name='listar_equipes',
     ),
+    path(
+        'professores/<int:prof_id>/turmas/<int:turma_id>/notas',
+        views.listar_notas,
+        name='listar_notas',
+    ),
     path('professores/<int:id>/casos', views.listar_casos_prof, name='listar_casos_prof'),
     path('professores/<int:prof_id>/casos/<int:caso_id>', views.info_casos, name='info_casos'),
     path('turmas/<int:id>', views.info_turmas, name='info_turmas'),

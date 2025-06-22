@@ -65,6 +65,11 @@ class Professor(models.Model):
         super().save(*args, **kwargs)
 
 
+# Classe de notas
+class Nota(models.Model):
+    valor = models.DecimalField(max_digits=3, decimal_places=1)
+
+
 # Classe aluno
 class Aluno(models.Model):
     usuario = models.OneToOneField(
@@ -72,6 +77,7 @@ class Aluno(models.Model):
     )
     semestre = models.CharField(max_length=6)
     matricula = models.CharField(max_length=10, unique=True)
+    notas = models.ManyToManyField(Nota, blank=True, related_name='aluno')
 
     def save(self, *args, **kwargs):
         self.usuario.tipo = Usuario.Tipo.ALUNO
@@ -142,11 +148,4 @@ class Equipe(models.Model):
 class TentativaDiagnostico(models.Model):
     descricao = models.CharField(max_length=1000)
     caso_clinico = models.ForeignKey(CasoClinico, on_delete=models.CASCADE)
-    equipe = models.ForeignKey(Equipe, on_delete=models.CASCADE)
-
-
-# Classe de notas
-class Notas(models.Model):
-    valor = models.DecimalField(max_digits=3, decimal_places=1)
-
     equipe = models.ForeignKey(Equipe, on_delete=models.CASCADE)
