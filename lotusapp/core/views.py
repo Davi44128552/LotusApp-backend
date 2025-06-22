@@ -278,9 +278,7 @@ def listar_notas(request, prof_id, turma_id):
         notas_alunos = []
         for aluno in alunos:
             notas = aluno.notas.all()
-            lista_notas = []
-            for nota in notas:
-                lista_notas.append(nota.valor)
+            lista_notas = [float(nota.valor) for nota in notas]
 
             notas_alunos.append(
                 {
