@@ -354,6 +354,9 @@ class ResultadoNotaComposta(models.Model):
                 total += valor_nota * componente.peso
 
         valor_final = min(total, 100)
-        cls.objects.update_or_create(
-            aluno=aluno, nota_composta=nota_composta, defaults={'valor': valor_final}
+        obj, created = cls.objects.update_or_create(
+            aluno=aluno, 
+            nota_composta=nota_composta, 
+            defaults={'valor': valor_final}
         )
+        return obj
