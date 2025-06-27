@@ -2,24 +2,13 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from . import views
-from .views_exames import (
-    CorrecaoViewSet,
-    ExameViewSet,
-    NotaCompostaViewSet,
-    NotaViewSet,
-    RespostaViewSet,
-    ResultadoNotaCompostaViewSet,
-)
+from .views_exames import CorrecaoViewSet, ExameViewSet, NotaCompostaViewSet, RespostaViewSet
 
 # Router para as viewsets de avaliação
 avaliacao_router = DefaultRouter()
 avaliacao_router.register(r'exames', ExameViewSet, basename='exame')
 avaliacao_router.register(r'correcoes', CorrecaoViewSet, basename='correcao')
-avaliacao_router.register(r'notas', NotaViewSet, basename='nota')
-avaliacao_router.register(r'notascompostas', NotaCompostaViewSet, basename='notacomp')  # Corrigido
-avaliacao_router.register(
-    r'resultados-notas-compostas', ResultadoNotaCompostaViewSet, basename='resultadonotacomp'
-)
+avaliacao_router.register(r'notascompostas', NotaCompostaViewSet, basename='notacomp')
 
 urlpatterns = [
     # Endpoints de usuários
@@ -30,21 +19,27 @@ urlpatterns = [
     path('professores/<int:id>/casos', views.listar_casos_prof, name='listar_casos_prof'),
     path('professores/<int:prof_id>/casos/<int:caso_id>', views.info_casos, name='info_casos'),
     path('turmas/<int:id>', views.info_turmas, name='info_turmas'),
-    # Novos endpoints para o sistema de avaliação
-    path(
-        'exames/<int:pk>/liberar_notas/',
-        ExameViewSet.as_view({'post': 'liberar_notas'}),
-        name='exame-liberar-notas'
-    ),
-    path(
-        'notascompostas/<int:pk>/calcular/',
-        NotaCompostaViewSet.as_view({'post': 'calcular'}),
-        name='notacomp-calcular'
-    ),
+    # Endpoints para sistema de avaliação
     path('avaliacao/', include(avaliacao_router.urls)),
+    # Endpoints específicos
     path(
         'turmas/<int:turma_pk>/exames/<int:exame_pk>/respostas/',
         RespostaViewSet.as_view({'get': 'list', 'post': 'create'}),
         name='resposta-list',
+    ),
+    path(
+        'exames/<int:pk>/liberar_notas/',
+        ExameViewSet.as_view({'post': 'liberar_notas'}),
+        name='exame-liberar-notas',
+    ),
+    path(
+        'exames/<int:pk>/preview_penalidades/',
+        ExameViewSet.as_view({'get': 'preview_penalidades'}),
+        name='exame-preview-penalidades',
+    ),
+    path(
+        'notascompostas/<int:pk>/calcular/',
+        NotaCompostaViewSet.as_view({'post': 'calcular'}),
+        name='notacomp-calcular',
     ),
 ]
