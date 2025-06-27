@@ -20,3 +20,6 @@ migrations/
 static/
 
 venv/
+
+# Tests
+.coverage

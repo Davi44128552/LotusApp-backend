@@ -8,10 +8,10 @@ target-version = "py311"
 
 # Seleciona os linter codes que serão aplicados
 # E: pycodestyle, F: pyflakes, I: isort, UP: upgrade (ex: remoção de código obsoleto)
-select = ["E", "F", "I", "UP"]
+lint.select = ["E", "F", "I", "UP"]
 
 # Ignora códigos específicos, se necessário (exemplo: E501 = linha muito longa)
-ignore = []
+lint.ignore = []
 
 # Tamanho máximo de linha
 line-length = 100
