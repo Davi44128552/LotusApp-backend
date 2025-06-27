@@ -175,14 +175,6 @@ class Exame(models.Model):
     fase_associada = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True)
     fator_penalidade = models.FloatField(default=0.5, null=True, blank=True)
 
-    class Meta:
-        constraints = [
-            models.CheckConstraint(
-                check=models.Q(fator_penalidade__gte=0) & models.Q(fator_penalidade__lte=1),
-                name='fator_penalidade_range',
-            )
-        ]
-
     def clean(self):
         if self.tipo == 'TBL' and self.fase == 'GRAT' and not self.fase_associada:
             raise ValidationError('gRAT deve ter uma fase iRAT associada')

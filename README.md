@@ -37,3 +37,8 @@ You can install it with one of these commands: `pip install django` or `sudo apt
 
   *Obs.: Se der erro relacionado à inexistência das bibliotecas recém-instaladas, escreva apenas "python" no lugar de "python3"*
 
+## Testando
+
+1. Entre no `venv` (caso já não esteja): `source venv/bin/activate`
+2. Instale a dependencias de teste: `python -r requirements-test.txt`
+3. Rode os testes: `pytest --cov=core`
